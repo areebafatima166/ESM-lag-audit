@@ -32,3 +32,12 @@ colnames(boot_low_raw) <- c(boot_terms, "singular")
 dir.create("results", showWarnings = FALSE)
 saveRDS(boot_low_raw, "results/boot_low_raw.rds")
 
+
+
+# ---- Low-engagement results table ----
+ci <- t(apply(boot_low_raw[, boot_terms], 2, quantile, c(.025, .975), na.rm = TRUE))
+fit_low <- lmer(y_pmc ~ dir * (prev_x + prev_y) + x_pmc + x_mean + factor(beep) + (0 + x_pmc | id),
+                data = dat_both_low, REML = FALSE)
+out <- data.frame(term = boot_terms, estimate = fixef(fit_low)[boot_terms],
+                  ci_lower = ci[, 1], ci_upper = ci[, 2])
+write.csv(out, "results/low_engagement_ci.csv", row.names = FALSE)

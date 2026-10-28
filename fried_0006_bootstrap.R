@@ -11,4 +11,4 @@ boot6_raw <- t(replicate(1000, tryCatch(boot_once(dat6_both3), error = function(
 colnames(boot6_raw) <- c(boot_terms, 'singular')
 saveRDS(boot6_raw, 'results/boot6_raw.rds')
 ci6 <- apply(boot6_raw[, boot_terms], 2, quantile, probs = c(0.025, 0.975), na.rm = TRUE)
-write.csv(as.data.frame(t(ci6)), 'results/bootstrap6_ci.csv')
+write.csv(data.frame(term = colnames(ci6), ci_lower = ci6[1, ], ci_upper = ci6[2, ]), 'results/bootstrap6_ci.csv', row.names = FALSE)

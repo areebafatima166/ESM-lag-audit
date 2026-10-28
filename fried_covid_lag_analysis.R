@@ -18,6 +18,46 @@ boot_raw <- t(replicate(1000, tryCatch(boot_once(dat_both), error = function(e) 
 colnames(boot_raw) <- c(boot_terms, 'singular')
 saveRDS(boot_raw, 'results/boot_raw.rds')
 ci <- apply(boot_raw[, boot_terms], 2, quantile, probs = c(0.025, 0.975), na.rm = TRUE)
-write.csv(as.data.frame(t(ci)), 'results/bootstrap_ci.csv')
+write.csv(data.frame(term = colnames(ci), ci_lower = ci[1, ], ci_upper = ci[2, ]), 'results/bootstrap_ci.csv', row.names = FALSE)
 results <- data.frame(term = c('prev_x (forward)', 'prev_y (forward)', 'prev_x difference (reverse - forward)', 'prev_y difference (reverse - forward)'), estimate = unname(fixef(joint_int)[boot_terms]), ci_lower = unname(ci[1, ]), ci_upper = unname(ci[2, ]))
 write.csv(results, 'results/final_estimates.csv', row.names = FALSE)
+
+
+# ---- Audit counts: reproduces Section 2.2-2.4 and Table 1 ----
+cols <- names(dat)[which(names(dat) == "difficulties_relaxing"):which(names(dat) == "time_home")]
+items_raw   <- rowSums(!is.na(dat[, cols]))
+items_clean <- rowSums(!is.na(dat_clean[, cols]))
+
+dup_split <- dat %>%
+  mutate(items_all = items_raw) %>%
+  group_by(id, day, beep) %>% filter(n() > 1) %>%
+  summarise(answered_rows = sum(items_all > 0), .groups = "drop") %>%
+  count(answered_rows)
+
+d2 <- dat_final %>% arrange(id, day, beep) %>% group_by(id, day) %>%
+  mutate(paired = !is.na(lag(beep)) & beep - lag(beep) == 1) %>% ungroup()
+
+audit <- data.frame(
+  quantity = c("raw rows", "duplicate rows removed", "rows after deduplication",
+               "all items missing, raw", "all items missing, after dedup",
+               "expired prompts with some responses", "outcome-only prompts",
+               "final answered prompts", "prompts with a valid predecessor",
+               "day-start prompts without predecessor", "later prompts without valid predecessor",
+               "duplicate pairs: both empty", "duplicate pairs: one answered", "duplicate pairs: two answered"),
+  value = c(nrow(dat), nrow(dat) - nrow(dat_clean), nrow(dat_clean),
+            sum(items_raw == 0), sum(items_clean == 0),
+            sum(dat_clean$duration == "Expired" & dat_clean$n_items > 0, na.rm = TRUE),
+            sum(dat_clean$n_items == 0 & items_clean > 0),
+            nrow(dat_final), sum(d2$paired),
+            sum(!d2$paired & d2$beep == 1), sum(!d2$paired & d2$beep > 1),
+            dup_split$n[dup_split$answered_rows == 0],
+            dup_split$n[dup_split$answered_rows == 1],
+            dup_split$n[dup_split$answered_rows == 2]))
+write.csv(audit, "results/audit_counts.csv", row.names = FALSE)
+
+stopifnot(
+  nrow(dat) == 4372, nrow(dat) - nrow(dat_clean) == 33,
+  nrow(dat_clean) - sum(items_clean == 0) - 7 - 1 == nrow(dat_final),
+  nrow(dat_final) == 3938, sum(d2$paired) == 2767,
+  sum(d2$paired) + sum(!d2$paired & d2$beep == 1) + sum(!d2$paired & d2$beep > 1) == nrow(dat_final)
+)

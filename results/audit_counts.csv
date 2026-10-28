@@ -1,0 +1,15 @@
+"quantity","value"
+"raw rows",4372
+"duplicate rows removed",33
+"rows after deduplication",4339
+"all items missing, raw",424
+"all items missing, after dedup",393
+"expired prompts with some responses",7
+"outcome-only prompts",1
+"final answered prompts",3938
+"prompts with a valid predecessor",2767
+"day-start prompts without predecessor",982
+"later prompts without valid predecessor",189
+"duplicate pairs: both empty",3
+"duplicate pairs: one answered",28
+"duplicate pairs: two answered",2

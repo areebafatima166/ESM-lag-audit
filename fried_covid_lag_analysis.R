@@ -61,3 +61,15 @@ stopifnot(
   nrow(dat_final) == 3938, sum(d2$paired) == 2767,
   sum(d2$paired) + sum(!d2$paired & d2$beep == 1) + sum(!d2$paired & d2$beep > 1) == nrow(dat_final)
 )
+
+
+# ---- Sensitivity: person means recomputed on the retained pairs ----
+re <- function(d) d %>% group_by(id) %>%
+  mutate(across(c(x_pmc, y_pmc, prev_x, prev_y), ~ . - mean(.))) %>% ungroup()
+both_re <- bind_rows(std(re(dat_fwd2)) %>% mutate(dir = 'fwd'),
+                     std(re(dat_rev2)) %>% mutate(dir = 'rev'))
+fit_re <- lmer(y_pmc ~ dir * (prev_x + prev_y) + x_pmc + x_mean + factor(beep) + (0 + x_pmc | id),
+               data = both_re, REML = FALSE)
+dif <- fixef(fit_re)[boot_terms] - fixef(joint_int)[boot_terms]
+write.csv(data.frame(term = boot_terms, change = dif), 'results/centering_sensitivity.csv', row.names = FALSE)
+stopifnot(max(abs(dif)) < 0.006)

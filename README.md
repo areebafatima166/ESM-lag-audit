@@ -48,4 +48,4 @@ Rerunning scripts 1, 3 and 4 (as background jobs in fresh R sessions) reproduced
 Code is released under the MIT licence (see `LICENSE`). The openESM data keep their own licences, as stated above.
 
 ## Citation
-
+Fatima, A. (2026). A checklist and reproducible pipeline for lagged analyses of experience sampling data. Preprint. Code: https://github.com/areebafatima166/ESM-lag-audit
